@@ -1,9 +1,28 @@
 [package]
 name = "rust-editor"
 version = "0.1.0"
+authors = ["Valerie Rutsch <vrutsch@cloudbees.com>"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "rust-editor"
+
+[workspace]
+members = ["lib"]
+
+[features]
+default = []
+reload = ["dep:hot-lib-reloader"]
 
 [dependencies]
+lib = { path = "./lib" }
+hot-lib-reloader = { version = "^0.7.0", optional = true }
+tokio = { version = "1.36.0", features = ["rt"] }
+eframe = "0.25.0"
+
+[dev-dependencies]
 git-cz = "0.7.2"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
