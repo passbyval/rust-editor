@@ -6,7 +6,7 @@ edition = "2021"
 crate-type = ["rlib", "dylib"]
 
 [dependencies]
-eframe = "0.25.0"
+eframe = "0.27.1"
 egui = "0.25.0"
 rfd = "0.13.0"
 tokio = { version = "1.36.0", features = ["rt", "fs"] }
