@@ -13,3 +13,8 @@ cz c
 ```shell
  adr new $ADR_NAME
 ```
+
+## Hot reload
+```shell
+cargo runcc -c
+```

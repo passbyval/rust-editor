@@ -63,8 +63,8 @@ Options
 
 ## Decision
 
-TBD.
+`egui` has been chosen for now.
 
 ## Consequences
 
-TBD.
+We are bound to a UI framework, however, this means quicker development.
