@@ -13,9 +13,14 @@ use std::path::Path;
 use std::sync::mpsc::{Receiver, Sender};
 mod syntax_highlighter;
 
+struct File {
+    content: String,
+    path: String,
+}
+
 struct FileList {
     active_file: String,
-    files: HashMap<String, String>,
+    files: HashMap<String, File>,
 }
 
 impl FileList {
@@ -26,20 +31,34 @@ impl FileList {
         }
     }
 
-    pub fn insert(&mut self, path: String) {
-        let contents = fs::read(&path).expect("Should have been able to read the file");
-        let code = String::from_utf8_lossy(&contents).to_string();
-        self.files.insert(path.to_string(), code);
+    fn insert(&mut self, path: String) {
+        let buff = fs::read(&path).expect("Should have been able to read the file");
+        let content = String::from_utf8_lossy(&buff).to_string();
+
+        let file = File {
+            content,
+            path: path.clone(),
+        };
+
+        self.files.insert(path.to_string(), file);
     }
 
-    pub fn set_active_file(&mut self, file_path: &String) {
+    fn set_active_file(&mut self, file_path: &String) {
         self.active_file = file_path.to_string();
     }
 
-    pub fn get_active_content(&mut self) -> String {
-        match &self.files.get(&self.active_file) {
-            Some(_) => self.files.get(&self.active_file).unwrap().clone(),
-            _ => String::new(),
+    fn get_active_content(&mut self) -> Option<&mut File> {
+        self.files.get_mut(&self.active_file)
+    }
+
+    fn save_active_file(&mut self) {
+        let file = &self.get_active_content();
+
+        match file {
+            Some(file) => {
+                fs::write(&file.path, &file.content).expect("Unable to write file");
+            }
+            _ => (),
         }
     }
 }
@@ -76,6 +95,8 @@ impl Default for State {
 fn file_menu_button(ui: &mut Ui, state: &mut State) {
     let organize_shortcut = KeyboardShortcut::new(Modifiers::CTRL | Modifiers::SHIFT, Key::O);
     let reset_shortcut = KeyboardShortcut::new(Modifiers::CTRL | Modifiers::SHIFT, Key::R);
+    let save_shortcut_ctrl = KeyboardShortcut::new(Modifiers::CTRL, Key::S);
+    let save_shortcut_meta = KeyboardShortcut::new(Modifiers::MAC_CMD, Key::S);
 
     if ui.input_mut(|i| i.consume_shortcut(&organize_shortcut)) {
         ui.ctx().memory_mut(|mem| mem.reset_areas());
@@ -83,6 +104,14 @@ fn file_menu_button(ui: &mut Ui, state: &mut State) {
 
     if ui.input_mut(|i| i.consume_shortcut(&reset_shortcut)) {
         ui.ctx().memory_mut(|mem| *mem = Default::default());
+    }
+
+    if ui.input_mut(|i| i.consume_shortcut(&save_shortcut_meta)) {
+        state.files.save_active_file()
+    }
+
+    if ui.input_mut(|i| i.consume_shortcut(&save_shortcut_ctrl)) {
+        state.files.save_active_file()
     }
 
     ui.menu_button("File", |ui| {
@@ -103,6 +132,10 @@ fn file_menu_button(ui: &mut Ui, state: &mut State) {
             state.files.set_active_file(&file_path);
             state.files.insert(file_path);
             ui.close_menu();
+        }
+
+        if ui.button("Save").clicked() {
+            state.files.save_active_file()
         }
     });
 
@@ -181,17 +214,22 @@ pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
 
     CentralPanel::default().show(ctx, |ui| {
         ScrollArea::vertical().show(ui, |ui| {
-            let mut code = state.files.get_active_content().to_owned();
+            let file = state.files.get_active_content();
 
-            ui.add_sized(
-                ui.available_size(),
-                TextEdit::multiline(&mut code)
-                    .font(TextStyle::Monospace)
-                    .code_editor()
-                    .desired_rows(10)
-                    .lock_focus(true)
-                    .layouter(&mut layouter),
-            );
+            match file {
+                Some(file) => {
+                    ui.add_sized(
+                        ui.available_size(),
+                        TextEdit::multiline(&mut file.content)
+                            .font(TextStyle::Monospace)
+                            .code_editor()
+                            .desired_rows(10)
+                            .lock_focus(true)
+                            .layouter(&mut layouter),
+                    );
+                }
+                _ => (),
+            }
         });
     });
 }
