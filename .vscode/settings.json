@@ -2,5 +2,8 @@
   "editor.tabSize": 4,
   "editor.insertSpaces": true,
   "editor.formatOnPaste": true,
-  "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  "editor.defaultFormatter": "rust-lang.rust-analyzer",
+  "cSpell.words": [
+    "layouter"
+  ]
 }

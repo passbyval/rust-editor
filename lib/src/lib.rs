@@ -6,75 +6,24 @@ use eframe::egui::{
 };
 
 use eframe::egui::text::{Fonts, LayoutJob};
+use file_list::FileList;
 use rfd::FileDialog;
-use std::collections::HashMap;
+use std::borrow::Borrow;
 use std::fs::{self, DirEntry};
-use std::path::Path;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender};
+
+mod file_list;
 mod syntax_highlighter;
-
-struct File {
-    content: String,
-    path: String,
-}
-
-struct FileList {
-    active_file: String,
-    files: HashMap<String, File>,
-}
-
-impl FileList {
-    pub fn new() -> Self {
-        Self {
-            active_file: "".into(),
-            files: HashMap::new(),
-        }
-    }
-
-    fn insert(&mut self, path: String) {
-        let buff = fs::read(&path).expect("Should have been able to read the file");
-        let content = String::from_utf8_lossy(&buff).to_string();
-
-        let file = File {
-            content,
-            path: path.clone(),
-        };
-
-        self.files.insert(path.to_string(), file);
-    }
-
-    fn set_active_file(&mut self, file_path: &String) {
-        self.active_file = file_path.to_string();
-    }
-
-    fn get_active_content(&mut self) -> Option<&mut File> {
-        self.files.get_mut(&self.active_file)
-    }
-
-    fn save_active_file(&mut self) {
-        let file = &self.get_active_content();
-
-        match file {
-            Some(file) => {
-                fs::write(&file.path, &file.content).expect("Unable to write file");
-            }
-            _ => (),
-        }
-    }
-}
 
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 pub struct State {
-    language: String,
     tx: Sender<Vec<u8>>,
     rx: Receiver<Vec<u8>>,
     paths: Vec<DirEntry>,
-    files: FileList,
-}
-
-fn map_paths(path: &Path) -> Vec<DirEntry> {
-    fs::read_dir(path).unwrap().map(|p| p.unwrap()).collect()
+    files: file_list::FileList,
 }
 
 impl Default for State {
@@ -85,11 +34,14 @@ impl Default for State {
         State {
             tx,
             rx,
-            language: "rs".into(),
             paths,
-            files: FileList::new(),
+            files: file_list::FileList::new(),
         }
     }
+}
+
+fn map_paths(path: &Path) -> Vec<DirEntry> {
+    fs::read_dir(path).unwrap().map(|p| p.unwrap()).collect()
 }
 
 fn file_menu_button(ui: &mut Ui, state: &mut State) {
@@ -126,11 +78,10 @@ fn file_menu_button(ui: &mut Ui, state: &mut State) {
                 .set_directory("/")
                 .pick_file();
 
-            let data = file.unwrap();
-            let file_path = data.into_os_string().into_string().unwrap();
+            let path_buf = file.unwrap();
+            let file_path = file_list::FileList::get_file_path(&path_buf);
 
-            state.files.set_active_file(&file_path);
-            state.files.insert(file_path);
+            state.files.insert(&file_path, true);
             ui.close_menu();
         }
 
@@ -141,19 +92,16 @@ fn file_menu_button(ui: &mut Ui, state: &mut State) {
 
     #[cfg(not(target_arch = "wasm32"))]
     ui.menu_button("View", |ui| {
-        // On the web the browser controls the zoom
-        {
-            gui_zoom::zoom_menu_buttons(ui);
-            ui.weak(format!(
-                "Current zoom: {:.0}%",
-                100.0 * ui.ctx().zoom_factor()
-            ))
-            .on_hover_text("The UI zoom level, on top of the operating system's default value");
-        }
+        gui_zoom::zoom_menu_buttons(ui);
+        ui.weak(format!(
+            "Current zoom: {:.0}%",
+            100.0 * ui.ctx().zoom_factor()
+        ))
+        .on_hover_text("The UI zoom level, on top of the operating system's default value");
     });
 }
 
-fn file_tree(ui: &mut Ui, paths: &mut Vec<DirEntry>, mut files: &mut FileList) {
+fn file_tree(ui: &mut Ui, paths: &mut Vec<DirEntry>, mut files: &mut file_list::FileList) {
     paths.sort_by(|a, b| {
         b.metadata()
             .unwrap()
@@ -172,12 +120,11 @@ fn file_tree(ui: &mut Ui, paths: &mut Vec<DirEntry>, mut files: &mut FileList) {
                 file_tree(inner_ui, &mut new_paths, &mut files)
             });
         } else {
-            if ui.selectable_label(false, file_name).double_clicked() {
-                print!("Double clicked!!");
-                let file_path: String = path.path().into_os_string().into_string().unwrap();
+            if ui.selectable_label(false, file_name).clicked() {
+                let path_buf = path.path();
+                let file_path = file_list::FileList::get_file_path(&path_buf);
 
-                files.set_active_file(&file_path);
-                files.insert(file_path);
+                files.insert(&file_path, true);
             }
         }
     }
@@ -185,11 +132,6 @@ fn file_tree(ui: &mut Ui, paths: &mut Vec<DirEntry>, mut files: &mut FileList) {
 
 #[no_mangle]
 pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
-    // if let Ok(code) = state.rx.try_recv() {
-    //     state.code = code;
-    //     state.changed = true;
-    // }
-
     self::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
         menu::bar(ui, |ui| {
             file_menu_button(ui, state);
@@ -213,6 +155,24 @@ pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
     };
 
     CentralPanel::default().show(ctx, |ui| {
+        if !state.files.active_file_path.is_empty() {
+            ui.horizontal(|ui| {
+                let mut checked_label = "";
+
+                for (current_path, file) in &state.files.files {
+                    let checked: bool = current_path == &state.files.active_file_path;
+
+                    if ui.selectable_label(checked, &file.name).clicked() {
+                        checked_label = current_path;
+                    }
+                }
+
+                if !checked_label.is_empty() {
+                    state.files.insert(&checked_label.to_string(), true);
+                }
+            });
+        }
+
         ScrollArea::vertical().show(ui, |ui| {
             let file = state.files.get_active_content();
 
