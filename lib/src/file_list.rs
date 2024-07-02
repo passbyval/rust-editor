@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 use std::fs::{self};
-use std::io::Write;
 use std::path::PathBuf;
 
-#[derive(Debug)]
-pub struct File {
-    pub content: String,
+#[derive(Debug, Clone)]
+pub struct FileMetaData {
     pub path: String,
     pub name: String,
 }
@@ -13,7 +11,8 @@ pub struct File {
 pub struct FileList {
     pub active_file_path: String,
     pub active_file_name: String,
-    pub files: HashMap<String, File>,
+    pub file_meta_data: HashMap<String, FileMetaData>,
+    pub file_content: HashMap<String, String>,
 }
 
 impl FileList {
@@ -21,7 +20,8 @@ impl FileList {
         Self {
             active_file_path: "".into(),
             active_file_name: "".into(),
-            files: HashMap::new(),
+            file_meta_data: HashMap::new(),
+            file_content: HashMap::new(),
         }
     }
 
@@ -30,15 +30,16 @@ impl FileList {
         let file_name = FileList::get_file_name(&path_buf);
         let file_path = FileList::get_file_path(&path_buf);
 
-        let file = File {
-            content: match self.files.get(&file_path) {
-                Some(file) => file.content.to_string(),
-                None => {
-                    let buff = fs::read(file_path.to_string())
-                        .expect("Should have been able to read the file");
-                    String::from_utf8_lossy(&buff).to_string()
-                }
-            },
+        let content = match self.file_content.get(&file_path) {
+            Some(file_content) => file_content.to_string(),
+            None => {
+                let buff = fs::read(file_path.to_string())
+                    .expect("Should have been able to read the file");
+                String::from_utf8_lossy(&buff).to_string()
+            }
+        };
+
+        let file = FileMetaData {
             path: file_path.to_string(),
             name: file_name,
         };
@@ -47,7 +48,8 @@ impl FileList {
             self.set_active_file(&file_path);
         }
 
-        self.files.insert(file_path.clone(), file);
+        self.file_meta_data.insert(file_path.to_string(), file);
+        self.file_content.insert(file_path, content);
     }
 
     pub fn get_file_path(path_buf: &PathBuf) -> String {
@@ -68,17 +70,30 @@ impl FileList {
         self.active_file_name = FileList::get_file_name(&PathBuf::from(file_path).to_path_buf())
     }
 
-    pub fn get_active_content(&mut self) -> Option<&mut File> {
-        self.files.get_mut(&self.active_file_path)
+    pub fn get_active_content(&mut self) -> (String, Option<&mut String>) {
+        (
+            self.active_file_path.to_string(),
+            self.file_content.get_mut(&self.active_file_path),
+        )
     }
 
     pub fn save_active_file(&mut self) {
-        let file = &self.get_active_content();
+        let (file_path, file_content) = self.get_active_content();
 
-        match file {
-            Some(file) => {
-                fs::write(&file.path, &file.content).expect("Unable to write file");
+        match file_content {
+            Some(content) => {
+                fs::write(file_path, content).expect("Unable to write file");
             }
+            _ => (),
+        }
+    }
+
+    pub fn close_file(&mut self, file_path: &String) {
+        self.file_meta_data.remove(file_path);
+        self.file_content.remove(file_path);
+
+        match self.file_meta_data.clone().keys().nth(0) {
+            Some(active_file) => self.set_active_file(active_file),
             _ => (),
         }
     }

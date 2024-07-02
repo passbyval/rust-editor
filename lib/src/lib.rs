@@ -6,6 +6,8 @@ use eframe::egui::{
 };
 
 use eframe::egui::text::{Fonts, LayoutJob};
+use egui::emath::RectTransform;
+use egui::{Color32, Pos2, Rect, RichText, Sense, Stroke, TextFormat, Vec2, WidgetText};
 use file_list::FileList;
 use rfd::FileDialog;
 use std::borrow::Borrow;
@@ -23,19 +25,20 @@ pub struct State {
     tx: Sender<Vec<u8>>,
     rx: Receiver<Vec<u8>>,
     paths: Vec<DirEntry>,
-    files: file_list::FileList,
+    file_list: file_list::FileList,
 }
 
 impl Default for State {
     fn default() -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
         let paths = map_paths(Path::new("./"));
+        let file_list = file_list::FileList::new();
 
         State {
             tx,
             rx,
             paths,
-            files: file_list::FileList::new(),
+            file_list,
         }
     }
 }
@@ -59,11 +62,11 @@ fn file_menu_button(ui: &mut Ui, state: &mut State) {
     }
 
     if ui.input_mut(|i| i.consume_shortcut(&save_shortcut_meta)) {
-        state.files.save_active_file()
+        state.file_list.save_active_file()
     }
 
     if ui.input_mut(|i| i.consume_shortcut(&save_shortcut_ctrl)) {
-        state.files.save_active_file()
+        state.file_list.save_active_file()
     }
 
     ui.menu_button("File", |ui| {
@@ -78,15 +81,18 @@ fn file_menu_button(ui: &mut Ui, state: &mut State) {
                 .set_directory("/")
                 .pick_file();
 
-            let path_buf = file.unwrap();
-            let file_path = file_list::FileList::get_file_path(&path_buf);
+            if file.is_some() {
+                let path_buf = file.unwrap();
+                let file_path = file_list::FileList::get_file_path(&path_buf);
 
-            state.files.insert(&file_path, true);
+                state.file_list.insert(&file_path, true);
+            }
+
             ui.close_menu();
         }
 
         if ui.button("Save").clicked() {
-            state.files.save_active_file()
+            state.file_list.save_active_file()
         }
     });
 
@@ -144,43 +150,65 @@ pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
         .min_width(200.0)
         .show(ctx, |ui| {
             ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
-                file_tree(ui, &mut state.paths, &mut state.files);
+                file_tree(ui, &mut state.paths, &mut state.file_list);
             });
         });
 
-    let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-        let mut layout_job: LayoutJob = syntax_highlighter::highlight(string.into());
-        layout_job.wrap.max_width = wrap_width;
-        ui.fonts(|f: &Fonts| f.layout_job(layout_job))
-    };
-
     CentralPanel::default().show(ctx, |ui| {
-        if !state.files.active_file_path.is_empty() {
+        if !state.file_list.active_file_path.is_empty() {
             ui.horizontal(|ui| {
-                let mut checked_label = "";
+                for (current_path, file) in &state.file_list.file_meta_data.clone() {
+                    let label: egui::Response = ui.selectable_label(
+                        current_path == &state.file_list.active_file_path,
+                        RichText::new(format!("{:^width$}", &file.name, width = 18)),
+                    );
 
-                for (current_path, file) in &state.files.files {
-                    let checked: bool = current_path == &state.files.active_file_path;
+                    let to_screen = RectTransform::from_to(
+                        Rect::from_min_size(Pos2::ZERO, label.rect.size()),
+                        label.rect,
+                    );
 
-                    if ui.selectable_label(checked, &file.name).clicked() {
-                        checked_label = current_path;
+                    if label.clicked() {
+                        state.file_list.insert(current_path, true);
                     }
-                }
 
-                if !checked_label.is_empty() {
-                    state.files.insert(&checked_label.to_string(), true);
+                    if ui.rect_contains_pointer(label.rect) {
+                        let close_button = ui.put(
+                            Rect {
+                                min: to_screen.transform_pos(Pos2 {
+                                    x: label.rect.width() - 9.0,
+                                    y: 0.0,
+                                }),
+                                max: to_screen.transform_pos(Pos2 { x: 20.0, y: 0.0 }),
+                            },
+                            egui::Button::new("x")
+                                .stroke(Stroke::new(0.0, Color32::TRANSPARENT))
+                                .fill(Color32::TRANSPARENT),
+                        );
+
+                        if close_button.clicked() {
+                            state.file_list.close_file(current_path);
+                        }
+                    };
                 }
             });
         }
 
         ScrollArea::vertical().show(ui, |ui| {
-            let file = state.files.get_active_content();
+            let (_, content) = state.file_list.get_active_content();
 
-            match file {
-                Some(file) => {
+            match content {
+                Some(text_content) => {
+                    let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
+                        let mut layout_job: LayoutJob =
+                            syntax_highlighter::highlight(string.into());
+                        layout_job.wrap.max_width = wrap_width;
+                        ui.fonts(|f: &Fonts| f.layout_job(layout_job))
+                    };
+
                     ui.add_sized(
                         ui.available_size(),
-                        TextEdit::multiline(&mut file.content)
+                        TextEdit::multiline(text_content)
                             .font(TextStyle::Monospace)
                             .code_editor()
                             .desired_rows(10)
