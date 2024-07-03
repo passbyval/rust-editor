@@ -1,18 +1,15 @@
 use cached::proc_macro::cached;
 use eframe::egui::text::LayoutJob;
 use eframe::egui::{Color32, FontId, TextFormat};
-use tree_sitter_highlight;
+use lazy_static::lazy_static;
+use tree_sitter::QueryError;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
+use tree_sitter_html;
 use tree_sitter_javascript;
 use tree_sitter_typescript;
 
-#[cached]
-pub fn highlight(code: String) -> egui::text::LayoutJob {
-    let mut highlighter = Highlighter::new();
-    let mut job: LayoutJob = egui::text::LayoutJob::default();
-    let bytes = code.as_bytes();
-
-    let ast_token_types = [
+lazy_static! {
+    static ref AST_TOKEN_TYPES: [(&'static str, &'static str); 20] = [
         ("attribute", "#9cdcfe"),
         ("constant", "#569cd6"),
         ("function.builtin", "#C8C8C8"),
@@ -34,41 +31,56 @@ pub fn highlight(code: String) -> egui::text::LayoutJob {
         ("variable.builtin", "#C8C8C8"),
         ("comment", "#6A9955"),
     ];
+    static ref TOKEN_NAMES: [&'static str; 20] = AST_TOKEN_TYPES.map(|p| p.0);
+    static ref HTML_CONFIG: HighlightConfiguration = {
+        let mut html_config = HighlightConfiguration::new(
+            tree_sitter_html::language(),
+            "html",
+            tree_sitter_html::HIGHLIGHTS_QUERY,
+            tree_sitter_html::INJECTIONS_QUERY,
+            "",
+        )
+        .unwrap();
 
-    let mut html_config = HighlightConfiguration::new(
-        tree_sitter_html::language(),
-        tree_sitter_html::HIGHLIGHTS_QUERY,
-        tree_sitter_html::INJECTIONS_QUERY,
-        "",
-    )
-    .unwrap();
+        html_config.configure(TOKEN_NAMES.as_slice());
+        html_config
+    };
+    static ref JAVASCRIPT_CONFIG: HighlightConfiguration = {
+        let mut js_config = HighlightConfiguration::new(
+            tree_sitter_javascript::language(),
+            "javascript",
+            tree_sitter_javascript::HIGHLIGHT_QUERY,
+            tree_sitter_javascript::INJECTIONS_QUERY,
+            tree_sitter_javascript::LOCALS_QUERY,
+        )
+        .unwrap();
 
-    let mut javascript_config = HighlightConfiguration::new(
-        tree_sitter_javascript::language(),
-        tree_sitter_javascript::HIGHLIGHT_QUERY,
-        tree_sitter_javascript::INJECTION_QUERY,
-        tree_sitter_javascript::LOCALS_QUERY,
-    )
-    .unwrap();
+        js_config.configure(TOKEN_NAMES.as_slice());
+        js_config
+    };
+    static ref TYPESCRIPT_CONFIG: HighlightConfiguration = {
+        let mut ts_config = HighlightConfiguration::new(
+            tree_sitter_typescript::language_typescript(),
+            "typescript",
+            tree_sitter_typescript::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_javascript::LOCALS_QUERY,
+        )
+        .unwrap();
 
-    let mut typescript_config = HighlightConfiguration::new(
-        tree_sitter_typescript::language_typescript(),
-        tree_sitter_typescript::HIGHLIGHT_QUERY,
-        "",
-        tree_sitter_javascript::LOCALS_QUERY,
-    )
-    .unwrap();
+        ts_config.configure(TOKEN_NAMES.as_slice());
+        ts_config
+    };
+}
 
-    let &names = &ast_token_types.map(|p| p.0);
-
-    print!("{:?}", &names);
-
-    javascript_config.configure(&names);
-    typescript_config.configure(&names);
-    html_config.configure(&names);
+#[cached]
+pub fn highlight(code: String) -> LayoutJob {
+    let mut highlighter = Highlighter::new();
+    let mut job: LayoutJob = LayoutJob::default();
+    let bytes = code.as_bytes();
 
     let events = highlighter
-        .highlight(&javascript_config, &bytes, None, |_| None)
+        .highlight(&JAVASCRIPT_CONFIG, &bytes, None, |_| None)
         .unwrap();
 
     let mut color: &str = "#6A9955";
@@ -91,7 +103,7 @@ pub fn highlight(code: String) -> egui::text::LayoutJob {
                     },
                 )
             }
-            HighlightEvent::HighlightStart(s) => color = &ast_token_types[s.0].1,
+            HighlightEvent::HighlightStart(s) => color = &AST_TOKEN_TYPES[s.0].1,
             HighlightEvent::HighlightEnd => color = "#6A9955",
         }
     }

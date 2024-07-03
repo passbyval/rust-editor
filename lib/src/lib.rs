@@ -5,41 +5,43 @@ use eframe::egui::{
     SidePanel, TextEdit, TextStyle, TopBottomPanel, Ui,
 };
 
-use eframe::egui::text::{Fonts, LayoutJob};
+use eframe::egui::text::Fonts;
 use egui::emath::RectTransform;
-use egui::{Color32, Pos2, Rect, RichText, Sense, Stroke, TextFormat, Vec2, WidgetText};
-use file_list::FileList;
+use egui::{Color32, Pos2, Rect, RichText, Stroke};
 use rfd::FileDialog;
-use std::borrow::Borrow;
 use std::fs::{self, DirEntry};
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Receiver, Sender};
-
+use std::path::Path;
 mod file_list;
 mod syntax_highlighter;
 
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 pub struct State {
-    tx: Sender<Vec<u8>>,
-    rx: Receiver<Vec<u8>>,
     paths: Vec<DirEntry>,
     file_list: file_list::FileList,
 }
 
 impl Default for State {
     fn default() -> Self {
-        let (tx, rx) = std::sync::mpsc::channel();
+        // let (tx, rx) = mpsc::channel();
         let paths = map_paths(Path::new("./"));
         let file_list = file_list::FileList::new();
 
-        State {
-            tx,
-            rx,
-            paths,
-            file_list,
-        }
+        // let (mut tx, rx) = futures_channel::mpsc::channel(1024);
+        // let mut debounced = debounced(rx, Duration::from_secs(1));
+
+        // thread::spawn(move || {
+        //     let layouter = |ui: &Ui, string: &str, wrap_width: f32| {
+        //         let mut layout_job: LayoutJob = syntax_highlighter::highlight(string.into());
+        //         layout_job.wrap.max_width = wrap_width;
+        //         ui.fonts(|f: &Fonts| f.layout_job(layout_job))
+        //     };
+
+        //     tx.send(Box::new(layouter) as Box<dyn Send + FnMut(&Ui, &str, f32) -> Arc<Galley>>)
+        //         .unwrap();
+        // });
+
+        State { paths, file_list }
     }
 }
 
@@ -195,20 +197,21 @@ pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
         }
 
         ScrollArea::vertical().show(ui, |ui| {
-            let (_, content) = state.file_list.get_active_content();
+            let (file_path, content) = state.file_list.get_active_content();
+
+            let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
+                let mut layout_job = syntax_highlighter::highlight(string.to_string());
+                layout_job.wrap.max_width = wrap_width;
+
+                ui.fonts(|f: &Fonts| f.layout_job(layout_job))
+            };
 
             match content {
                 Some(text_content) => {
-                    let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-                        let mut layout_job: LayoutJob =
-                            syntax_highlighter::highlight(string.into());
-                        layout_job.wrap.max_width = wrap_width;
-                        ui.fonts(|f: &Fonts| f.layout_job(layout_job))
-                    };
-
-                    ui.add_sized(
+                    let text_edit = ui.add_sized(
                         ui.available_size(),
                         TextEdit::multiline(text_content)
+                            .id(file_path.into())
                             .font(TextStyle::Monospace)
                             .code_editor()
                             .desired_rows(10)
