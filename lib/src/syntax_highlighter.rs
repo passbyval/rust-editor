@@ -1,8 +1,8 @@
 use cached::proc_macro::cached;
 use eframe::egui::text::LayoutJob;
 use eframe::egui::{Color32, FontId, TextFormat};
+use egui::FontFamily;
 use lazy_static::lazy_static;
-use tree_sitter::QueryError;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 use tree_sitter_html;
 use tree_sitter_javascript;
@@ -96,7 +96,7 @@ pub fn highlight(code: String) -> LayoutJob {
                     TextFormat {
                         color: Color32::from_hex(&color).unwrap(),
                         font_id: FontId {
-                            family: egui::FontFamily::Monospace,
+                            family: FontFamily::Monospace,
                             ..FontId::default()
                         },
                         ..TextFormat::default()

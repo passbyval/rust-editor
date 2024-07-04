@@ -1,3 +1,11 @@
+use eframe::{
+    egui::{
+        self,
+        style::{Selection, Visuals, Widgets},
+        Context, CursorIcon, FontData, FontDefinitions, FontFamily, ViewportBuilder,
+    },
+    run_native, App as EFrameApp, CreationContext, Error, Frame, NativeOptions,
+};
 #[cfg(feature = "reload")]
 use hot_lib::*;
 #[cfg(not(feature = "reload"))]
@@ -16,41 +24,48 @@ mod hot_lib {
 }
 
 #[derive(Default)]
-pub struct MyApp {
+pub struct App {
     state: State,
 }
 
-fn setup_custom_fonts(ctx: &eframe::egui::Context) {
-    let mut fonts = eframe::egui::FontDefinitions::default();
-
+fn setup_custom_fonts(ctx: &Context) {
+    let mut fonts = FontDefinitions::default();
     let fira_code = include_bytes!("fonts/FiraCode-Regular.ttf");
 
-    fonts.font_data.insert(
-        "fira_code".to_owned(),
-        eframe::egui::FontData::from_static(fira_code),
-    );
+    fonts
+        .font_data
+        .insert("fira_code".to_owned(), FontData::from_static(fira_code));
 
     fonts
         .families
-        .entry(eframe::egui::FontFamily::Monospace)
+        .entry(FontFamily::Monospace)
         .or_default()
         .insert(0, "fira_code".to_owned());
 
-    // Tell egui to use these fonts:
     ctx.set_fonts(fonts);
 }
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+impl EFrameApp for App {
+    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         render(&mut self.state, ctx, frame);
     }
 }
 
-impl MyApp {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+impl App {
+    fn new(cc: &CreationContext<'_>) -> Self {
         setup_custom_fonts(&cc.egui_ctx);
+        egui_extras::install_image_loaders(&cc.egui_ctx);
 
         cc.egui_ctx.set_zoom_factor(1.4);
+
+        cc.egui_ctx.set_visuals(Visuals {
+            widgets: Widgets {
+                ..Default::default()
+            },
+            image_loading_spinners: true,
+            interact_cursor: Some(CursorIcon::PointingHand),
+            ..Default::default()
+        });
 
         Self {
             state: State::default(),
@@ -58,18 +73,18 @@ impl MyApp {
     }
 }
 
-fn main() -> Result<(), eframe::Error> {
-    let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
+fn main() -> Result<(), Error> {
+    let native_options = NativeOptions {
+        viewport: ViewportBuilder::default()
             .with_inner_size([1200.0, 880.0])
             .with_resizable(true) // wide enough for the drag-drop overlay text
             .with_drag_and_drop(true),
         ..Default::default()
     };
 
-    eframe::run_native(
-        "My egui App",
-        options,
+    run_native(
+        "Rust Code Editor",
+        native_options,
         Box::new(|cc| {
             #[cfg(feature = "reload")]
             {
@@ -80,7 +95,7 @@ fn main() -> Result<(), eframe::Error> {
                     ctx.request_repaint();
                 });
             }
-            Box::new(MyApp::new(cc))
+            Ok(Box::new(App::new(cc)))
         }),
     )
 }
