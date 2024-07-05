@@ -1,41 +1,31 @@
-use eframe::egui::{Context, Galley, Pos2, Rect, Vec2};
-use std::sync::Arc;
+use eframe::egui::Vec2;
 
-pub fn get_display_size(ctx: &Context, size: Vec2) -> Vec2 {
-    Vec2 {
-        x: size.x / ctx.pixels_per_point(),
-        y: size.y / ctx.pixels_per_point(),
-    }
-}
+pub fn get_responsive_size(size: Vec2, ui: &mut Ui, min_size: Option<Vec2>) -> Vec2 {
+    let x = {
+        let responsive_x = size.x / ui.ctx().pixels_per_point();
+        let max = ui.available_size_before_wrap().x.floor().max(1.0);
 
-pub fn position_left_by_size(from: Rect, size: Vec2) -> Rect {
-    Rect::from_center_size(
-        Pos2 {
-            x: from.left_center().x - size.x,
-            ..from.left_center()
-        },
-        size,
-    )
-}
+        let min_x = match min_size {
+            Some(size) => size.x.clamp(1.0, max),
+            None => 1.0,
+        };
 
-pub fn position_top_by_galley(from: Rect, galley: Arc<Galley>) -> Rect {
-    Rect::from_center_size(
-        Pos2 {
-            y: from.center_top().y - galley.size().y,
-            x: from.center_top().x,
-        },
-        galley.rect.size(),
-    )
-}
+        responsive_x.clamp(min_x, max)
+    };
 
-pub fn position_bottom_by_galley(from: Rect, galley: Arc<Galley>) -> Rect {
-    Rect::from_center_size(
-        Pos2 {
-            y: from.center_bottom().y + galley.size().y + 15.0,
-            ..from.center_bottom()
-        },
-        galley.rect.size(),
-    )
+    let y = {
+        let responsive_y = size.y / ui.ctx().pixels_per_point();
+        let max = ui.available_size_before_wrap().y.floor().max(1.0);
+
+        let min_y = match min_size {
+            Some(size) => size.y.clamp(1.0, max),
+            None => 1.0,
+        };
+
+        responsive_y.clamp(min_y, max)
+    };
+
+    Vec2 { x, y }
 }
 
 #[macro_export]
@@ -48,4 +38,5 @@ macro_rules! infer_size {
     }};
 }
 
+use egui::Ui;
 pub(crate) use infer_size;

@@ -5,5 +5,7 @@
   "editor.defaultFormatter": "rust-lang.rust-analyzer",
   "cSpell.words": [
     "layouter"
-  ]
+  ],
+  "rust-analyzer.checkOnSave": true,
+  "rust-analyzer.checkOnSave.command": "clippy"
 }

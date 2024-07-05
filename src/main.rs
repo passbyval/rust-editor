@@ -1,11 +1,12 @@
 use eframe::{
     egui::{
-        self,
-        style::{Selection, Visuals, Widgets},
+        style::{Visuals, Widgets},
         Context, CursorIcon, FontData, FontDefinitions, FontFamily, ViewportBuilder,
     },
     run_native, App as EFrameApp, CreationContext, Error, Frame, NativeOptions,
 };
+
+mod themes;
 #[cfg(feature = "reload")]
 use hot_lib::*;
 #[cfg(not(feature = "reload"))]
@@ -31,16 +32,39 @@ pub struct App {
 fn setup_custom_fonts(ctx: &Context) {
     let mut fonts = FontDefinitions::default();
     let fira_code = include_bytes!("fonts/FiraCode-Regular.ttf");
+    let fira_code_bold = include_bytes!("fonts/FiraCode-Bold.ttf");
+    let roboto = include_bytes!("fonts/Roboto-Regular.ttf");
 
     fonts
         .font_data
         .insert("fira_code".to_owned(), FontData::from_static(fira_code));
+
+    fonts.font_data.insert(
+        "fira_code_bold".to_owned(),
+        FontData::from_static(fira_code_bold),
+    );
+
+    fonts
+        .font_data
+        .insert("roboto".to_owned(), FontData::from_static(roboto));
+
+    fonts
+        .families
+        .entry(FontFamily::Proportional)
+        .or_default()
+        .insert(0, "roboto".to_owned());
 
     fonts
         .families
         .entry(FontFamily::Monospace)
         .or_default()
         .insert(0, "fira_code".to_owned());
+
+    fonts
+        .families
+        .entry(FontFamily::Monospace)
+        .or_default()
+        .insert(1, "fira_code_bold".to_owned());
 
     ctx.set_fonts(fonts);
 }
@@ -55,7 +79,6 @@ impl App {
     fn new(cc: &CreationContext<'_>) -> Self {
         setup_custom_fonts(&cc.egui_ctx);
         egui_extras::install_image_loaders(&cc.egui_ctx);
-
         cc.egui_ctx.set_zoom_factor(1.4);
 
         cc.egui_ctx.set_visuals(Visuals {
