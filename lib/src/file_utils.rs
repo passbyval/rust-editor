@@ -5,7 +5,7 @@ use std::{
 
 use rfd::FileDialog;
 
-use crate::{file_list, State};
+use crate::{file_store, State};
 
 pub fn map_paths(path: &Path) -> Vec<DirEntry> {
     fs::read_dir(path).unwrap().map(|p| p.unwrap()).collect()
@@ -21,8 +21,8 @@ pub fn open_file(state: &mut State, directory: &str) {
 
     if file.is_some() {
         let path_buf = file.unwrap();
-        let file_path = file_list::FileList::get_file_path(&path_buf);
+        let file_path = file_store::FileStore::get_file_path(&path_buf);
 
-        state.file_list.insert(&file_path, true);
+        state.file_store.insert(&file_path, true);
     }
 }

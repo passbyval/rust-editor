@@ -2,9 +2,9 @@ use std::{fs::DirEntry, path::PathBuf};
 
 use egui::{CursorIcon, Ui};
 
-use crate::{file_list, file_utils};
+use crate::{file_store, file_utils};
 
-pub fn create(ui: &mut Ui, paths: &mut Vec<DirEntry>, mut files: &mut file_list::FileList) {
+pub fn create(ui: &mut Ui, paths: &mut Vec<DirEntry>, mut files: &mut file_store::FileStore) {
     paths.sort_by(|a, b| {
         b.metadata()
             .unwrap()
@@ -34,7 +34,7 @@ pub fn create(ui: &mut Ui, paths: &mut Vec<DirEntry>, mut files: &mut file_list:
 
             if label.clicked() {
                 let path_buf = path.path();
-                let file_path = file_list::FileList::get_file_path(&path_buf);
+                let file_path = file_store::FileStore::get_file_path(&path_buf);
 
                 files.insert(&file_path, true);
             }

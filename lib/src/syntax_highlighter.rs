@@ -1,12 +1,9 @@
 use cached::proc_macro::cached;
-use eframe::egui::text::LayoutJob;
-use eframe::egui::{Color32, FontId, TextFormat};
+use egui::text::LayoutJob;
 use egui::FontFamily;
+use egui::{Color32, FontId, TextFormat};
 use lazy_static::lazy_static;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_html;
-use tree_sitter_javascript;
-use tree_sitter_typescript;
 
 lazy_static! {
     static ref AST_TOKEN_TYPES: [(&'static str, &'static str); 20] = [

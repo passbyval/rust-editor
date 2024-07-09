@@ -7,10 +7,9 @@ crate-type = ["rlib", "dylib"]
 
 [dependencies]
 cached = "0.49.0"
-throttle_my_fn = "0.2.6"
 debounce = "0.2.2"
 eframe = "0.28.0"
-egui = "0.28.0"
+egui = { version = "0.28.0", features = ["color-hex"] }
 memoize = "0.4.2"
 timed-debouncer = "0.1.0"
 lazy_static = "1.4.0"

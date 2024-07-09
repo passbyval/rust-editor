@@ -3,10 +3,9 @@ use eframe::egui::{gui_zoom, Key, KeyboardShortcut, Modifiers, Ui};
 use crate::{file_utils, State};
 
 pub fn create(ui: &mut Ui, state: &mut State) {
-    let organize_shortcut = KeyboardShortcut::new(Modifiers::CTRL | Modifiers::SHIFT, Key::O);
-    let reset_shortcut = KeyboardShortcut::new(Modifiers::CTRL | Modifiers::SHIFT, Key::R);
-    let save_shortcut_ctrl = KeyboardShortcut::new(Modifiers::CTRL, Key::S);
-    let save_shortcut_meta = KeyboardShortcut::new(Modifiers::MAC_CMD, Key::S);
+    let organize_shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O);
+    let reset_shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::R);
+    let save_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::S);
 
     if ui.input_mut(|i| i.consume_shortcut(&organize_shortcut)) {
         ui.ctx().memory_mut(|mem| mem.reset_areas());
@@ -16,12 +15,8 @@ pub fn create(ui: &mut Ui, state: &mut State) {
         ui.ctx().memory_mut(|mem| *mem = Default::default());
     }
 
-    if ui.input_mut(|i| i.consume_shortcut(&save_shortcut_meta)) {
-        state.file_list.save_active_file()
-    }
-
-    if ui.input_mut(|i| i.consume_shortcut(&save_shortcut_ctrl)) {
-        state.file_list.save_active_file()
+    if ui.input_mut(|i| i.consume_shortcut(&save_shortcut)) {
+        state.file_store.save_active_file()
     }
 
     ui.menu_button("File", |ui| {
@@ -34,7 +29,7 @@ pub fn create(ui: &mut Ui, state: &mut State) {
         }
 
         if ui.button("Save").clicked() {
-            state.file_list.save_active_file()
+            state.file_store.save_active_file()
         }
     });
 

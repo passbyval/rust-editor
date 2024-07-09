@@ -904,6 +904,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "color-hex"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecdffb913a326b6c642290a0d0ec8e8d6597291acdc07cc4c9cb4b3635d44cf9"
+
+[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1330,6 +1336,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2cabe0a45c3736c274bc650ca02ab293eb2ad1a3870f6033590ca7a3ee9963c"
 dependencies = [
  "bytemuck",
+ "color-hex",
  "emath",
 ]
 
@@ -2570,7 +2577,6 @@ dependencies = [
  "memoize",
  "parking_lot 0.11.2",
  "rfd",
- "throttle_my_fn",
  "timed-debouncer",
  "tree-sitter",
  "tree-sitter-highlight",
@@ -4548,18 +4554,6 @@ checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
 dependencies = [
  "cfg-if",
  "once_cell",
-]
-
-[[package]]
-name = "throttle_my_fn"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "482c185e5675626c9a130b3a8f362c322a239338c882f745a1d9a85838b987f0"
-dependencies = [
- "parking_lot 0.11.2",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]

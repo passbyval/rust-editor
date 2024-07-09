@@ -34,6 +34,7 @@ fn setup_custom_fonts(ctx: &Context) {
     let fira_code = include_bytes!("fonts/FiraCode-Regular.ttf");
     let fira_code_bold = include_bytes!("fonts/FiraCode-Bold.ttf");
     let roboto = include_bytes!("fonts/Roboto-Regular.ttf");
+    let roboto_bold = include_bytes!("fonts/Roboto-Bold.ttf");
 
     fonts
         .font_data
@@ -49,10 +50,20 @@ fn setup_custom_fonts(ctx: &Context) {
         .insert("roboto".to_owned(), FontData::from_static(roboto));
 
     fonts
+        .font_data
+        .insert("roboto_bold".to_owned(), FontData::from_static(roboto_bold));
+
+    fonts
         .families
         .entry(FontFamily::Proportional)
         .or_default()
         .insert(0, "roboto".to_owned());
+
+    fonts
+        .families
+        .entry(FontFamily::Proportional)
+        .or_default()
+        .insert(1, "roboto_bold".to_owned());
 
     fonts
         .families
