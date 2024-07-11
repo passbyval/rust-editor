@@ -1,0 +1,16 @@
+[package]
+name = "hotreload"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+reload = ["dep:hot-lib-reloader"]
+
+[dependencies]
+main.workspace = true
+egui = { workspace = true }
+eframe = { workspace = true }
+hot-lib-reloader = { workspace = true, optional = true }
+egui_extras = { version = "0.28.0", features = ["all_loaders"] }
+

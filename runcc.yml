@@ -2,4 +2,4 @@
   bin: |
     cargo run --features reload
   lib: |
-    cargo watch -w lib -x "build -p lib"
+    cargo watch -x "build --all"

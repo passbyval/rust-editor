@@ -1,8 +1,9 @@
-use crate::{image_utils, layout_utils};
 use egui::{
     Button, Color32, CursorIcon, Frame, Label, Response, RichText, Sense, Stroke, Style,
     TextWrapMode, Ui, Vec2, Widget,
 };
+use image::load_image;
+use layout::get_responsive_size;
 use lazy_static::lazy_static;
 
 pub struct OpenFolderCard {}
@@ -21,7 +22,7 @@ impl OpenFolderCard {
         let multiplier = 16.0;
         let true_size = image_ratio * multiplier;
 
-        layout_utils::get_responsive_size(
+        get_responsive_size(
             Vec2 {
                 x: true_size,
                 y: true_size,
@@ -44,8 +45,7 @@ impl Widget for OpenFolderCard {
         {
             group.content_ui.add_sized(
                 self.get_icon_size(ui),
-                image_utils::load_image!("../images/folder_open.svg")
-                    .max_size(Vec2::new(70.0, 70.0)),
+                load_image!("./images/folder_open.svg").max_size(Vec2::new(70.0, 70.0)),
             );
 
             group.content_ui.add_space(6.0);

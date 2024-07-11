@@ -3,7 +3,7 @@ use egui::{
     WidgetInfo, WidgetText, WidgetType,
 };
 
-use crate::theme::{self, Theme};
+use theme::Theme;
 
 pub struct SelectableLabel {
     selected: bool,
@@ -17,8 +17,8 @@ impl SelectableLabel {
         Self {
             selected,
             text: text.into(),
-            rounding: Some(theme::Theme::ROUNDING),
-            padding: Some(theme::Theme::PADDING),
+            rounding: Some(Theme::ROUNDING),
+            padding: Some(Theme::PADDING),
         }
     }
 
@@ -43,7 +43,7 @@ impl Widget for SelectableLabel {
         } = self;
 
         let theme = Theme::dark();
-        let button_padding = padding.unwrap_or(theme::Theme::PADDING);
+        let button_padding = padding.unwrap_or(Theme::PADDING);
         let total_extra = button_padding + button_padding;
 
         let wrap_width = ui.available_width() - total_extra.x;

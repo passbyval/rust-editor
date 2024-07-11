@@ -1,4 +1,4 @@
-use eframe::egui::Vec2;
+use egui::{Ui, Vec2};
 
 pub fn get_responsive_size(size: Vec2, ui: &mut Ui, min_size: Option<Vec2>) -> Vec2 {
     let x = {
@@ -37,6 +37,3 @@ macro_rules! infer_size {
         (create, galley, position, response)
     }};
 }
-
-use egui::Ui;
-pub(crate) use infer_size;

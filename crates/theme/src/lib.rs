@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use egui::{Color32, Rounding, Vec2};
 use lazy_static::lazy_static;
 

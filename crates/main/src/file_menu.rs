@@ -23,7 +23,12 @@ pub fn create(ui: &mut Ui, state: &mut State) {
         ui.set_min_width(220.0);
         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
 
-        if ui.button("Open").clicked() {
+        if ui.button("Open File").clicked() {
+            file_utils::open_file(state, "/");
+            ui.close_menu();
+        }
+
+        if ui.button("Open Folder").clicked() {
             file_utils::open_file(state, "/");
             ui.close_menu();
         }

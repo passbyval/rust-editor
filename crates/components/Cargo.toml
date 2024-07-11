@@ -1,0 +1,18 @@
+[package]
+name = "components"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+
+[features]
+default = []
+reload = ["dep:hot-lib-reloader"]
+
+[dependencies]
+image.workspace = true
+layout.workspace = true
+theme.workspace = true
+hot-lib-reloader = { workspace = true, optional = true }
+egui = { workspace = true }
+lazy_static = "1.4.0"

@@ -6,19 +6,18 @@ use eframe::{
     run_native, App as EFrameApp, CreationContext, Error, Frame, NativeOptions,
 };
 
-mod themes;
 #[cfg(feature = "reload")]
 use hot_lib::*;
 #[cfg(not(feature = "reload"))]
-use lib::*;
+use main::*;
 
 #[cfg(feature = "reload")]
-#[hot_lib_reloader::hot_module(dylib = "lib")]
+#[hot_lib_reloader::hot_module(dylib = "main", lib_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/debug"))]
 mod hot_lib {
     use eframe::egui::*;
-    pub use lib::State;
+    pub use main::State;
 
-    hot_functions_from_file!("lib/src/lib.rs");
+    hot_functions_from_file!("crates/main/src/lib.rs");
 
     #[lib_change_subscription]
     pub fn subscribe() -> hot_lib_reloader::LibReloadObserver {}
@@ -111,7 +110,8 @@ fn main() -> Result<(), Error> {
     let native_options = NativeOptions {
         viewport: ViewportBuilder::default()
             .with_inner_size([1200.0, 880.0])
-            .with_resizable(true) // wide enough for the drag-drop overlay text
+            .with_resizable(true)
+            .with_transparent(true)
             .with_drag_and_drop(true),
         ..Default::default()
     };

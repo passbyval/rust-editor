@@ -1,24 +1,28 @@
 [package]
 name = "rust-editor"
 version = "0.1.0"
-authors = ["Valerie Rutsch <vrutsch@cloudbees.com>"]
+authors = ["Valerie Rutsch <rutschvalerie@gmail.com>"]
 edition = "2021"
 
-[[bin]]
-name = "rust-editor"
-
 [workspace]
-members = ["lib"]
+members = ["crates/*"]
+default-members = ["crates/hotreload"]
 
 [features]
 default = []
-reload = ["dep:hot-lib-reloader"]
 
-[dependencies]
-lib = { path = "./lib" }
-hot-lib-reloader = { version = "^0.7.0", optional = true }
+[workspace.dependencies]
+main = { path = "crates/main" }
+image = { path = "crates/image" }
+layout = { path = "crates/layout" }
+components = { path = "crates/components" }
+theme = { path = "crates/theme" }
+hotreload = { path = "crates/hotreload" }
+hot-lib-reloader = { version = "^0.7.0" }
 egui_extras = { version = "0.28.0", features = ["all_loaders"] }
 eframe = "0.28.0"
+egui = { version = "0.28.0" }
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 git-cz = "0.7.2"

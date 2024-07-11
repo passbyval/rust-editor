@@ -1,27 +1,23 @@
 #![recursion_limit = "256"]
 
-use components::open_folder_card::OpenFolderCard;
+use components::{
+    default_message_modal::OpenFolderCard as DefaultMessage, selectable_label::SelectableLabel,
+};
 use egui::{
     self, emath::RectTransform, menu, scroll_area::ScrollBarVisibility, text::Fonts, vec2, Button,
-    CentralPanel, Color32, Context, CursorIcon, Frame, Hyperlink, Label, Layout, Link, Margin,
-    Pos2, Rect, RichText, ScrollArea, Sense, SidePanel, Stroke, TextEdit, TextStyle,
-    TopBottomPanel, Ui, Vec2,
+    CentralPanel, Color32, Context, CursorIcon, Frame, Label, Link, Margin, Pos2, Rect, RichText,
+    ScrollArea, Sense, SidePanel, Stroke, TextEdit, TextStyle, TopBottomPanel, Ui, Vec2,
 };
-
 use file_store::FileData;
-use file_utils::open_file;
+use layout::get_responsive_size;
 use lazy_static::lazy_static;
 use std::{fs::DirEntry, path::Path};
 
-mod components;
 mod file_menu;
 mod file_store;
 mod file_tree;
 mod file_utils;
-mod image_utils;
-mod layout_utils;
 mod syntax_highlighter;
-mod theme;
 
 lazy_static! {
     static ref CENTRAL_PANE_FRAME: Frame = Frame {
@@ -78,10 +74,10 @@ pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
 
                 let max_rect = Rect::from_center_size(
                     Pos2 { y: y - 80.0, x },
-                    layout_utils::get_responsive_size(Vec2 { x, y }, ui, None),
+                    get_responsive_size(Vec2 { x, y }, ui, None),
                 );
 
-                let open_folder_card = ui.put(max_rect, OpenFolderCard::new());
+                let open_folder_card = ui.put(max_rect, DefaultMessage::new());
 
                 if open_folder_card.clicked() {
                     file_utils::open_file(state, "/");
@@ -98,7 +94,7 @@ pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
                                 ui.spacing_mut().item_spacing = Vec2::default();
 
                                 let label = ui.add(
-                                    components::selectable_label::SelectableLabel::new(
+                                    SelectableLabel::new(
                                         path == state.file_store.active_file,
                                         RichText::new(&name),
                                     )
@@ -209,7 +205,7 @@ pub fn render(state: &mut State, ctx: &Context, _frame: &mut eframe::Frame) {
                                         ui.add(Link::new(RichText::new(dirent_name)));
 
                                         if components.peek().is_some() {
-                                            let crumb = ui.add(Label::new(
+                                            ui.add(Label::new(
                                                 RichText::new(format!(
                                                     "{:^width$}",
                                                     "/",

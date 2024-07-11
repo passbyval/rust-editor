@@ -1,0 +1,16 @@
+[package]
+name = "layout"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+
+[features]
+default = []
+reload = ["dep:hot-lib-reloader"]
+
+[dependencies]
+hot-lib-reloader = { workspace = true, optional = true }
+egui = { workspace = true }
+eframe = { workspace = true }
+

@@ -1,16 +1,13 @@
-use std::borrow::Borrow;
-use std::collections::HashMap;
-use std::fs::{self, File};
-use std::iter::Map;
-use std::path::{Ancestors, Path, PathBuf};
-use std::{array, iter};
-
 use egui::TextBuffer;
+use std::collections::HashMap;
+use std::fs::{self};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct FileData {
     pub name: String,
     pub content: String,
+    pub path: String,
 }
 
 pub struct FileStore {
@@ -74,8 +71,14 @@ impl FileStore {
                 .collect();
         }
 
-        self.files
-            .insert(file_path.to_string(), FileData { name, content });
+        self.files.insert(
+            file_path.to_string(),
+            FileData {
+                name,
+                content,
+                path: file_path.to_string(),
+            },
+        );
     }
 
     pub fn get_file_path(path: &Path) -> String {
@@ -123,6 +126,13 @@ impl FileStore {
     pub fn close_file(&mut self, file_path: &String) {
         if self.files.contains_key(file_path) {
             self.files.remove(file_path);
+            self.active_file = "".to_string();
+            self.components.clear();
+
+            match &self.files.values().last() {
+                Some(file) => self.insert(&file.path.to_string(), true),
+                _ => println!("todo"),
+            }
         }
     }
 }
